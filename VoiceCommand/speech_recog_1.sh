@@ -25,7 +25,7 @@ print "Speech recognition using google cloud speech api.\n\n";
 print "Usage: $0 [FILES]\n\n";
 exit;
 }
-my $url = "https://speech.googleapis.com/v1beta1/speech:syncrecognize?key=AIzaSyDuctZjjNe9rz-ATdMP_LjWfJKfXOb_fnM"; 
+my $url = "https://speech.googleapis.com/v1beta1/speech:syncrecognize?key=YOUR_KEY"; 
 
 my @file_list = @ARGV; foreach my $file 
 (@file_list) {
