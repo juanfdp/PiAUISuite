@@ -21,7 +21,7 @@ inline void ProcessVoice(FILE *cmd, VoiceCommand &vc, char *message) {
     command += " -l ";
     command += vc.lang;
     cmd = popen(command.c_str(),"r");
-    fscanf(cmd,"\"%[^\"\n]\"",message);
+	fscanf(cmd, "%s",&message);
     vc.ProcessMessage(message);
     fclose(cmd);
 }
@@ -36,9 +36,12 @@ inline float GetVolume(string recordHW, string com_duration, bool nullout) {
     run += " -r 16000 /dev/shm/noise.wav";
     if(nullout)
         run += " 1>>/dev/shm/voice.log 2>>/dev/shm/voice.log";
+    // printf("Comando rec: %s\n", run.c_str());
     system(run.c_str());
-    cmd = popen("sox /dev/shm/noise.wav -n stats -s 16 2>&1 | awk '/^Max\\ level/ {print $3}'","r");
+    cmd = popen("sox /dev/shm/noise.wav -n stats -s 16 2>&1 | awk '/^Max level/ {print $3}'","r");
+    // printf("Comando cmd: %s", cmd.c_str());
     fscanf(cmd,"%f",&vol);
+	// printf("%6.4lf\n", vol);
     fclose(cmd);
     return vol;
 }
@@ -84,17 +87,22 @@ int main(int argc, char* argv[]) {
         float volume = 0.0f;
         changemode(1);
         string cont_com = "curl -X POST --data-binary @/dev/shm/noise.flac --user-agent 'Mozilla/5.0' --header 'Content-Type: audio/x-flac; rate=16000;' 'https://www.google.com/speech-api/v2/recognize?output=json&lang=" + vc.lang + "&key=AIzaSyBOti4mM-6x9WDnZIjIeyEU21OpBXqWBgw&client=Mozilla/5.0' | sed -e 's/[{}]/''/g' | awk -F\":\" '{print $4}' | awk -F\",\" '{print $1}' | tr -d '\\n'";
-
+		
+		string command = "speech-recog.sh -d " + vc.command_duration;
+		printf("command: %s \n", command.c_str()); 
         while(vc.continuous) {
             volume = GetVolume(vc.recordHW, vc.command_duration, true);
+			printf("Volumen: %6.4lf\n", volume);
+			printf("Treshold: %6.4lf\n", vc.thresh);
             if(volume > vc.thresh) {
-                //printf("Found volume %f above thresh %f\n",volume,vc.thresh);
+                printf("Found volume %f above thresh %f\n",volume,vc.thresh);
                 if(vc.verify) {
-                    system("flac /dev/shm/noise.wav -f --best --sample-rate 16000 -o /dev/shm/noise.flac 1>>/dev/shm/voice.log 2>>/dev/shm/voice.log");
-                    cmd = popen(cont_com.c_str(),"r");
+                    // system("rec --channels=1 --bits=16 --rate=16000 /dev/shm/noise.flac 1>>/dev/shm/voice.log 2>>/dev/shm/voice.log");
+                    cmd = popen(command.c_str(),"r");
                     if(cmd == NULL)
                         printf("ERROR\n");
-                    fscanf(cmd,"\"%[^\"\n]\"",message);
+					fscanf(cmd, "%s",&message);
+					printf("message: %s \n", message); 
                     fclose(cmd);
                     system("rm -fr /dev/shm/noise.*");
                     //printf("message: %s, keyword: %s\n", message, vc.keyword.c_str());
@@ -135,7 +143,7 @@ int main(int argc, char* argv[]) {
             command += " -l ";
             command += vc.lang;
             cmd = popen(command.c_str(),"r");
-            fscanf(cmd,"\"%[^\"\n]\"",message);
+			fscanf(cmd, "%s",&message);
             vc.ProcessMessage(message);
             fclose(cmd);
         } else {
@@ -258,7 +266,7 @@ VoiceCommand::VoiceCommand() {
     keyword = "pi";
     response = "Yes sir?";
     improper = "Received improper command";
-    lang="en";
+    lang="es";
     quiet = false;
     filler = "\"FILLER FILL ";
     continuous = false;
@@ -267,7 +275,7 @@ VoiceCommand::VoiceCommand() {
     ignoreOthers = false;
     differentHW = false;
     passthrough = false;
-    recordHW = "plughw:1,0";
+    recordHW = "plughw:0,0";
     pid_file.clear();
     api.clear();
     forced_input.clear();
@@ -800,7 +808,7 @@ void VoiceCommand::Setup() {
     scanf("%s",buffer);
     if(buffer[0] == 'y') {
         printf("First I'm going to say something and see if you hear it\n");
-        system("tts \"FILLER FILL Este es un programa creado por Steven Hickson\"");
+        system("tts \"FILLER FILL This program was created by Steven Hickson\"");
         printf("Did you hear anything? (y/n)\n");
         scanf("%s",buffer);
         if(buffer[0] == 'n') {
@@ -873,8 +881,18 @@ void VoiceCommand::Setup() {
         int card = -1,device = -1;
         cmd = popen("arecord -l | awk '/^tarjeta [0-9]/ {print $2}'","r");
         fscanf(cmd, "%d:",&card);
+		if(card == -1){
+			cmd = popen("arecord -l | awk '/^card [0-9]/ {print $2}'","r");
+			fscanf(cmd, "%d:",&card);
+		}
+		
         cmd = popen("arecord -l | grep -o 'dispositivo [0-9]:' | grep -o  '[0-9]:'","r");
         fscanf(cmd, "%d:",&device);
+		if(device == -1){
+			cmd = popen("arecord -l | grep -o 'device [0-9]:' | grep -o  '[0-9]:'","r");
+			fscanf(cmd, "%d:",&device);
+		}
+		
         if(card == -1 || device == -1) {
             printf("I couldn't find a hardware device. You don't have a valid microphone\n");
             exit(-1);
@@ -934,16 +952,18 @@ void VoiceCommand::Setup() {
                 scanf("%s",buffer);
                 keyword = string(buffer);
                 char message[200];
-                printf("Now say that keyword\n");
+				
                 string command = "speech-recog.sh";
+				
                 if(differentHW) {
                     command += " -D ";
                     command += recordHW;
                 }
                 command += " -d ";
                 command += duration;
-                cmd = popen(command.c_str(),"r");
-                fscanf(cmd,"\"%[^\"\n]\"\n",message); 
+				cmd = popen(command.c_str(),"r");
+				fscanf(cmd, "%s",&message);
+				
                 if(iequals(message,keyword.c_str()))
                     printf("I got %s, which was a perfect match!\n",message);
                 else
