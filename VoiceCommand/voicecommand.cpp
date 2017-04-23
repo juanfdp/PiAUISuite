@@ -800,7 +800,7 @@ void VoiceCommand::Setup() {
     scanf("%s",buffer);
     if(buffer[0] == 'y') {
         printf("First I'm going to say something and see if you hear it\n");
-        system("tts \"FILLER FILL This program was created by Steven Hickson\"");
+        system("tts \"FILLER FILL Este es un programa creado por Steven Hickson\"");
         printf("Did you hear anything? (y/n)\n");
         scanf("%s",buffer);
         if(buffer[0] == 'n') {
@@ -871,14 +871,14 @@ void VoiceCommand::Setup() {
         printf("First I'm going to make sure you have the correct hardware device\n");
         FILE *cmd;
         int card = -1,device = -1;
-        cmd = popen("arecord -l | awk '/^card [0-9]/ {print $2}'","r");
+        cmd = popen("arecord -l | awk '/^tarjeta [0-9]/ {print $2}'","r");
         fscanf(cmd, "%d:",&card);
-        cmd = popen("arecord -l | grep -o 'device [0-9]:' | grep -o  '[0-9]:'","r");
+        cmd = popen("arecord -l | grep -o 'dispositivo [0-9]:' | grep -o  '[0-9]:'","r");
         fscanf(cmd, "%d:",&device);
         if(card == -1 || device == -1) {
             printf("I couldn't find a hardware device. You don't have a valid microphone\n");
             exit(-1);
-        } else if(card != 1 || device != 0) {
+        } else if(card != 0 || device != 0) {
             printf("I detected that you have a different audio card then I located, would you like me to fix that in the config file? (y/n)\n");
             scanf("%s",buffer);
             if(buffer[0] == 'y') {
