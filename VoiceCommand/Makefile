@@ -2,7 +2,7 @@
 BLDDEF  = -D'BUILDTS="$(shell date +"%y%m%d %H:%M:%S %z")"'
 
 #Set Architecture
-ARCH := arm-v7
+ARCH := x86
 DEVEL := rel
 LIBS := -lcurl -lboost_regex
 
