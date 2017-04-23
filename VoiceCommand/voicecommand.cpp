@@ -881,14 +881,14 @@ void VoiceCommand::Setup() {
         int card = -1,device = -1;
         cmd = popen("arecord -l | awk '/^tarjeta [0-9]/ {print $2}'","r");
         fscanf(cmd, "%d:",&card);
-		if(card == -1){
+		if(card == -1 || card == NULL){
 			cmd = popen("arecord -l | awk '/^card [0-9]/ {print $2}'","r");
 			fscanf(cmd, "%d:",&card);
 		}
 		
         cmd = popen("arecord -l | grep -o 'dispositivo [0-9]:' | grep -o  '[0-9]:'","r");
         fscanf(cmd, "%d:",&device);
-		if(device == -1){
+		if(device == -1 || device == NULL){
 			cmd = popen("arecord -l | grep -o 'device [0-9]:' | grep -o  '[0-9]:'","r");
 			fscanf(cmd, "%d:",&device);
 		}
