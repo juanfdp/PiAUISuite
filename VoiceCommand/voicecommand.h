@@ -16,6 +16,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <sstream>
+#include <stdexcept>
 
 #define DATA_SIZE 200
 #define DURATION_DEFAULT "3"
