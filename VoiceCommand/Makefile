@@ -31,7 +31,7 @@ FLAGS := -O3
 endif
 
 voicecommand: voicecommand.cpp voicecommand.h
-	$(CC) $(BLDDEF) $(FLAGS) $(LIBS) -o $(addprefix $(OUTPUT), voicecommand) voicecommand.cpp
+	$(CC) $(BLDDEF) $(FLAGS) -o $(addprefix $(OUTPUT), voicecommand) voicecommand.cpp $(LIBS)
 
 clean:
 	rm *.o voicecommand 2>/dev/null
